@@ -3,7 +3,7 @@
     /// <summary>
     /// Copyright (C) 2017 yjq 版权所有。
     /// 类名：IJsonSerializer.cs
-    /// 类属性：公共类（非静态）
+    /// 类属性：公共接口（非静态）
     /// 类功能描述：Json序列化接口
     /// 创建标识：yjq 2017/4/27 21:57:27
     /// </summary>
@@ -23,7 +23,7 @@
         /// <typeparam name="T"></typeparam>
         /// <param name="obj">对象值</param>
         /// <returns>json格式的字符串</returns>
-        string SerializeIgnorreNull<T>(T obj);
+        string SerializeIgnoreNull<T>(T obj);
 
         /// <summary>
         /// 将json格式字符串反序列化成指定类型

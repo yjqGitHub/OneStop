@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace JQ.Infrastructure.Utils
+namespace JQ.Infrastructure
 {
     /// <summary>
     /// Copyright (C) 2017 yjq 版权所有。

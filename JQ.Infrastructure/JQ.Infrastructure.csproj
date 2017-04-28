@@ -66,22 +66,42 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configurations\JQConfiguration.cs" />
     <Compile Include="Container\IObjectContainer.cs" />
     <Compile Include="Container\LifeStyle.cs" />
     <Compile Include="Container\ObjectContainer.cs" />
     <Compile Include="Exception\JQException.cs" />
+    <Compile Include="Extension\ExceptionExtension.cs" />
+    <Compile Include="Extension\JsonSerializeExtention.cs" />
+    <Compile Include="Extension\ObjectConvertExtension.cs" />
+    <Compile Include="Extension\ObjectJudgeExtension.cs" />
     <Compile Include="JQDisposable.cs" />
+    <Compile Include="Logger\ILogger.cs" />
+    <Compile Include="Logger\ILoggerFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serializing\IJsonSerializer.cs" />
     <Compile Include="Serializing\ISerializer.cs" />
     <Compile Include="ThirdyParty\Autofac\AutofacObjectContainer.cs" />
+    <Compile Include="ThirdyParty\NLog\NLogFactory.cs" />
+    <Compile Include="ThirdyParty\NLog\NLogLogger.cs" />
+    <Compile Include="ThirdyParty\Redis\DefaultRedisSerializer.cs" />
+    <Compile Include="ThirdyParty\Redis\IRedisClient.cs" />
+    <Compile Include="ThirdyParty\Redis\IRedisDatabaseProvider.cs" />
+    <Compile Include="ThirdyParty\Redis\IRedisSerializer.cs" />
+    <Compile Include="ThirdyParty\Redis\ProtobufRedisSerializer.cs" />
+    <Compile Include="ThirdyParty\Redis\RedisCacheOptions.cs" />
+    <Compile Include="ThirdyParty\Redis\StackExchangeRedis\RedisDatabaseProvider.cs" />
+    <Compile Include="ThirdyParty\Redis\StackExchangeRedis\StackExchangeRedisClient.cs" />
     <Compile Include="ThirdyParty\Serializer\NewtonsoftJsonSerializer.cs" />
     <Compile Include="ThirdyParty\Serializer\ProtobufSerializer.cs" />
+    <Compile Include="Utils\ConfigUtil.cs" />
+    <Compile Include="Utils\ConfigWacherUtil.cs" />
+    <Compile Include="Utils\ExceptionUtil.cs" />
+    <Compile Include="Utils\FileUtil.cs" />
+    <Compile Include="Utils\LogUtil.cs" />
     <Compile Include="Utils\WebUtil.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Extension\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

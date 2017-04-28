@@ -5,7 +5,7 @@ namespace JQ.Infrastructure
     /// <summary>
     /// Copyright (C) 2017 yjq 版权所有。
     /// 类名：ISerializer.cs
-    /// 类属性：公共类（非静态）
+    /// 类属性：公共接口（非静态）
     /// 类功能描述：序列化接口
     /// 创建标识：yjq 2017/4/27 20:43:32
     /// </summary>

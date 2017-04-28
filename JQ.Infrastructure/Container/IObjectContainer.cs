@@ -6,7 +6,7 @@ namespace JQ.Infrastructure
     /// <summary>
     /// Copyright (C) 2017 yjq 版权所有。
     /// 类名：IObjectContainer.cs
-    /// 类属性：公共类（非静态）
+    /// 类属性：公共接口（非静态）
     /// 类功能描述：依赖注入容器接口
     /// 创建标识：yjq 2017/4/27 22:02:06
     /// </summary>

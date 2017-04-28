@@ -17,14 +17,5 @@ namespace JQ.InfrastructureUnitTest.ThirdyParty
     /// </summary>
     public sealed class AutofacObjectContainerTest
     {
-        [Fact]
-        public void TestRegister()
-        {
-            ObjectContainer.SetContainer(new AutofacObjectContainer());
-            ObjectContainer.Register<IJsonSerializer, NewtonsoftJsonSerializer>(serviceName: "jsonnet");
-            Assert.IsType<IJsonSerializer>(ObjectContainer.ResolveNamed<IJsonSerializer>("jsonnet"));
-            var json = ObjectContainer.Resolve<IJsonSerializer>().Serialize(new { Id = 1 });
-            Assert.Equal("{\"Id\":1}", json);
-        }
     }
 }

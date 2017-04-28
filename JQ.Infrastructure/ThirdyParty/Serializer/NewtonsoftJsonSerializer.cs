@@ -66,7 +66,7 @@ namespace JQ.Infrastructure
         /// <typeparam name="T"></typeparam>
         /// <param name="obj">对象值</param>
         /// <returns>json格式的字符串</returns>
-        public string SerializeIgnorreNull<T>(T obj)
+        public string SerializeIgnoreNull<T>(T obj)
         {
             return JsonConvert.SerializeObject(obj, IgnoreNullSettings);
         }
