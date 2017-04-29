@@ -1,7 +1,6 @@
 ﻿using ProtoBuf;
-using StackExchange.Redis;
-using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace JQ.Infrastructure
 {
@@ -14,61 +13,59 @@ namespace JQ.Infrastructure
     /// </summary>
     public sealed class ProtobufRedisSerializer : DefaultRedisSerializer, IRedisSerializer
     {
-        private const string TYPESEPERATOR = "|";
-        private const string PROTOBUFPREFIX = "PB^";
-
-        public override object Deserialize(RedisValue objbyte)
+        public override object Deserialize(byte[] objbyte)
         {
             return Deserialize<object>(objbyte);
         }
 
-        public override T Deserialize<T>(RedisValue objbyte)
+        public override Task<object> DeserializeAsync(byte[] objbyte)
         {
-            string serializedObj = objbyte;
-            if (!serializedObj.StartsWith(PROTOBUFPREFIX))
+            return DeserializeAsync<object>(objbyte);
+        }
+
+        public override T Deserialize<T>(byte[] objbyte)
+        {
+            if (!default(T).GetType().IsDefined(typeof(ProtoContractAttribute), false))
             {
                 return base.Deserialize<T>(objbyte);
             }
-
-            serializedObj = serializedObj.Substring(PROTOBUFPREFIX.Length);
-            var typeSeperatorIndex = serializedObj.IndexOf(TYPESEPERATOR, StringComparison.InvariantCultureIgnoreCase);
-            var serialized = serializedObj.Substring(typeSeperatorIndex + 1);
-            var byteAfter64 = Convert.FromBase64String(serialized);
-
-            using (var memoryStream = new MemoryStream(byteAfter64))
+            using (var memoryStream = new MemoryStream(objbyte))
             {
                 return Serializer.Deserialize<T>(memoryStream);
             }
         }
 
-        public override string Serialize(object value, Type type)
+        public override Task<T> DeserializeAsync<T>(byte[] objbyte)
         {
-            return Serialize<object>(value, type);
+            return Task.Factory.StartNew(() => Deserialize<T>(objbyte));
         }
 
-        public override string Serialize<T>(T value, Type type)
-        {
-            if (!type.IsDefined(typeof(ProtoContractAttribute), false))
-            {
-                return base.Serialize(value, type);
-            }
-
-            using (var memoryStream = new MemoryStream())
-            {
-                Serializer.Serialize(memoryStream, value);
-                var serialized = Convert.ToBase64String(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
-                return $"{PROTOBUFPREFIX}{type.AssemblyQualifiedName}{TYPESEPERATOR}{serialized}";
-            }
-        }
-
-        public override string Serialize(object value)
+        public override byte[] Serialize(object value)
         {
             return Serialize<object>(value);
         }
 
-        public override string Serialize<T>(T value)
+        public override Task<byte[]> SerializeAsync(object value)
         {
-            return Serialize(value, value.GetType());
+            return SerializeAsync(value);
+        }
+
+        public override byte[] Serialize<T>(T value)
+        {
+            if (!value.GetType().IsDefined(typeof(ProtoContractAttribute), false))
+            {
+                return base.Serialize(value);
+            }
+            using (var memoryStream = new MemoryStream())
+            {
+                Serializer.Serialize(memoryStream, value);
+                return memoryStream.ToArray();
+            }
+        }
+
+        public override Task<byte[]> SerializeAsync<T>(T value)
+        {
+            return Task.Factory.StartNew(() => Serialize(value));
         }
     }
 }

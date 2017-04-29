@@ -19,10 +19,21 @@ namespace JQ.Infrastructure
 
         public int DatabaseId { get; set; }
 
+        /// <summary>
+        /// 分隔符
+        /// </summary>
+        public string NamespaceSplitSymbol { get; set; } = ":";
+
+        /// <summary>
+        /// 前缀
+        /// </summary>
+        public string Prefix { get; set; }
+
         public RedisCacheOptions()
         {
             ConnectionString = GetDefaultConnectionString();
             DatabaseId = GetDefaultDatabaseId();
+            Prefix = GetDefaultPrefix();
         }
 
         private static string GetDefaultConnectionString()
@@ -39,6 +50,16 @@ namespace JQ.Infrastructure
                 return -1;
             }
             return configSet.ToSafeInt32(-1);
+        }
+
+        private static string GetDefaultPrefix()
+        {
+            string prefix = JQConfiguration.RedisPrfix;
+            if (prefix.IsNullOrEmptyWhiteSpace())
+            {
+                prefix = "JQ";
+            }
+            return prefix;
         }
     }
 }

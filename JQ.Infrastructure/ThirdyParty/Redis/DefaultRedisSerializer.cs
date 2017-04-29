@@ -1,6 +1,6 @@
 ﻿using JQ.Infrastructure.Extension;
-using StackExchange.Redis;
-using System;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace JQ.Infrastructure
 {
@@ -13,35 +13,46 @@ namespace JQ.Infrastructure
     /// </summary>
     public class DefaultRedisSerializer : IRedisSerializer
     {
-        public virtual object Deserialize(RedisValue objbyte)
+        public virtual object Deserialize(byte[] objbyte)
         {
             return Deserialize<object>(objbyte);
         }
 
-        public virtual T Deserialize<T>(RedisValue objbyte)
+        public virtual T Deserialize<T>(byte[] objbyte)
         {
-            string objectStr = objbyte;
-            return objectStr.ToObjInfo<T>();
+            var jsonString = Encoding.UTF8.GetString(objbyte);
+            return jsonString.ToObjInfo<T>();
         }
 
-        public virtual string Serialize(object value)
+        public virtual Task<object> DeserializeAsync(byte[] objbyte)
+        {
+            return DeserializeAsync<object>(objbyte);
+        }
+
+        public virtual Task<T> DeserializeAsync<T>(byte[] objbyte)
+        {
+            return Task.Factory.StartNew(() => Deserialize<T>(objbyte));
+        }
+
+        public virtual byte[] Serialize(object value)
         {
             return Serialize<object>(value);
         }
 
-        public virtual string Serialize(object value, Type type)
+        public virtual byte[] Serialize<T>(T value)
         {
-            return Serialize<object>(value, type);
+            var jsonString = value.ToJson();
+            return Encoding.UTF8.GetBytes(jsonString);
         }
 
-        public virtual string Serialize<T>(T value)
+        public virtual Task<byte[]> SerializeAsync(object value)
         {
-            return Serialize(value, value.GetType());
+            return SerializeAsync(value);
         }
 
-        public virtual string Serialize<T>(T value, Type type)
+        public virtual Task<byte[]> SerializeAsync<T>(T value)
         {
-            return value.ToJson();
+            return Task.Factory.StartNew(() => Serialize(value));
         }
     }
 }

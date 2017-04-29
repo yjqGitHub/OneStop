@@ -23,5 +23,10 @@
         /// IP解析的文件路径
         /// </summary>
         public static string IPParseConfigPath { get; set; }
+
+        /// <summary>
+        /// redis默认前缀
+        /// </summary>
+        public static string RedisPrfix { get; set; }
     }
 }

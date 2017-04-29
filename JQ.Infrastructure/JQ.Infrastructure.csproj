@@ -72,6 +72,7 @@
     <Compile Include="Container\ObjectContainer.cs" />
     <Compile Include="Exception\JQException.cs" />
     <Compile Include="Extension\ExceptionExtension.cs" />
+    <Compile Include="Extension\IEnumerableExtension.cs" />
     <Compile Include="Extension\JsonSerializeExtention.cs" />
     <Compile Include="Extension\ObjectConvertExtension.cs" />
     <Compile Include="Extension\ObjectJudgeExtension.cs" />

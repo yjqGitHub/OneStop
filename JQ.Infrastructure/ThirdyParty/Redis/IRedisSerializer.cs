@@ -1,5 +1,4 @@
-﻿using StackExchange.Redis;
-using System;
+﻿using System.Threading.Tasks;
 
 namespace JQ.Infrastructure
 {
@@ -12,17 +11,20 @@ namespace JQ.Infrastructure
     /// </summary>
     public interface IRedisSerializer
     {
-        object Deserialize(RedisValue objbyte);
+        object Deserialize(byte[] objbyte);
 
-        T Deserialize<T>(RedisValue objbyte);
+        Task<object> DeserializeAsync(byte[] objbyte);
 
-        string Serialize(object value);
+        T Deserialize<T>(byte[] objbyte);
 
-        string Serialize<T>(T value);
+        Task<T> DeserializeAsync<T>(byte[] objbyte);
 
+        byte[] Serialize(object value);
 
-        string Serialize(object value, Type type);
+        Task<byte[]> SerializeAsync(object value);
 
-        string Serialize<T>(T value, Type type);
+        byte[] Serialize<T>(T value);
+
+        Task<byte[]> SerializeAsync<T>(T value);
     }
 }
