@@ -91,7 +91,8 @@
     <Compile Include="ThirdyParty\Redis\IRedisSerializer.cs" />
     <Compile Include="ThirdyParty\Redis\ProtobufRedisSerializer.cs" />
     <Compile Include="ThirdyParty\Redis\RedisCacheOptions.cs" />
-    <Compile Include="ThirdyParty\Redis\StackExchangeRedis\RedisDatabaseProvider.cs" />
+    <Compile Include="ThirdyParty\Redis\StackExchangeRedis\ConnectionMultiplexerFactory.cs" />
+    <Compile Include="ThirdyParty\Redis\StackExchangeRedis\StackExchangeRedisProvider.cs" />
     <Compile Include="ThirdyParty\Redis\StackExchangeRedis\StackExchangeRedisClient.cs" />
     <Compile Include="ThirdyParty\Serializer\NewtonsoftJsonSerializer.cs" />
     <Compile Include="ThirdyParty\Serializer\ProtobufSerializer.cs" />

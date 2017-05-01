@@ -18,44 +18,31 @@ namespace JQ.Infrastructure
     {
         private IDatabase _database;
 
-        private readonly ISerializer _serializer;
+        private readonly IRedisSerializer _serializer;
 
-        private readonly Lazy<ConnectionMultiplexer> _connectionMultiplexer;
+        private readonly ConnectionMultiplexer _connectionMultiplexer;
 
         private readonly RedisCacheOptions _redisCacheOption;
 
-        private ConnectionMultiplexer Connection { get { return _connectionMultiplexer.Value; } }
+        private ConnectionMultiplexer Connection { get { return _connectionMultiplexer; } }
 
-        public IDatabase Database
+        private IDatabase Database
         {
             get { return _database ?? (_database = Connection.GetDatabase(_redisCacheOption.DatabaseId)); }
         }
 
-        public ISerializer Serializer { get { return _serializer; } }
+        public IRedisSerializer Serializer { get { return _serializer; } }
 
-        public StackExchangeRedisClient(RedisCacheOptions redisCacheOption, ISerializer serializer)
+        public StackExchangeRedisClient(RedisCacheOptions redisCacheOption, IRedisSerializer serializer)
         {
             _redisCacheOption = redisCacheOption;
             _serializer = serializer;
-            _connectionMultiplexer = new Lazy<ConnectionMultiplexer>(CreateConnectionMultiplexer);
-        }
-
-        private ConnectionMultiplexer CreateConnectionMultiplexer()
-        {
-            return ConnectionMultiplexer.Connect(_redisCacheOption.ConnectionString);
+            _connectionMultiplexer = ConnectionMultiplexerFactory.GetConnection(_redisCacheOption.ConnectionString);
         }
 
         private string SetPrefix(string key)
         {
             return _redisCacheOption.Prefix.IsNullOrEmptyWhiteSpace() ? key : $"{_redisCacheOption.Prefix}{_redisCacheOption.NamespaceSplitSymbol}{key}";
-        }
-
-        /// <summary>
-        /// 清楚当前db的所有数据
-        /// </summary>
-        public void Clear()
-        {
-            DeleteKeyWithKeyPrefix("*");
         }
 
         #region Keys
@@ -67,14 +54,6 @@ namespace JQ.Infrastructure
         public int KeyCount()
         {
             return CalcuteKeyCount("*");
-        }
-
-        /// <summary>
-        /// 释放
-        /// </summary>
-        public void Dispose()
-        {
-            Connection?.Dispose();
         }
 
         /// <summary>
@@ -312,6 +291,37 @@ namespace JQ.Infrastructure
         }
 
         /// <summary>
+        /// string获取值
+        /// </summary>
+        /// <typeparam name="T">值的类型</typeparam>
+        /// <param name="key">key</param>
+        /// <returns></returns>
+        public T StringGet<T>(string key)
+        {
+            var valuesBytes = Database.StringGet(SetPrefix(key));
+            if (!valuesBytes.HasValue)
+            {
+                return default(T);
+            }
+            return Serializer.Deserialize<T>(valuesBytes);
+        }
+
+        /// <summary>
+        /// string获取值
+        /// </summary>
+        /// <typeparam name="T">值的类型</typeparam>
+        /// <param name="key">key</param>
+        public async Task<T> StringGetAsync<T>(string key)
+        {
+            var valuesBytes = await Database.StringGetAsync(SetPrefix(key));
+            if (!valuesBytes.HasValue)
+            {
+                return default(T);
+            }
+            return await Serializer.DeserializeAsync<T>(valuesBytes);
+        }
+
+        /// <summary>
         /// 键值累加
         /// </summary>
         /// <param name="key">键名</param>
@@ -401,6 +411,426 @@ namespace JQ.Infrastructure
 
         #endregion StringSet
 
+        #region hash
+
+        /// <summary>
+        /// 获取所有的Hash键
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="commandFlags"></param>
+        /// <returns></returns>
+        public IEnumerable<string> HashKeys(string key, CommandFlags commandFlags = CommandFlags.None)
+        {
+            return Database.HashKeys(SetPrefix(key), commandFlags).Select(x => x.ToString());
+        }
+
+        /// <summary>
+        /// 获取hash键的个数
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="commandFlags"></param>
+        /// <returns></returns>
+        public long HashLength(string key, CommandFlags commandFlags = CommandFlags.None)
+        {
+            return Database.HashLength(SetPrefix(key), commandFlags);
+        }
+
+        /// <summary>
+        /// 设置一个hash值
+        /// </summary>
+        /// <typeparam name="T">值的类型</typeparam>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash的键值</param>
+        /// <param name="value">值</param>
+        /// <returns></returns>
+        public bool HashSet<T>(string key, string hashField, T value)
+        {
+            return Database.HashSet(SetPrefix(key), hashField, Serializer.Serialize(value));
+        }
+
+        /// <summary>
+        /// 设置一个hash值
+        /// </summary>
+        /// <typeparam name="T">值的类型</typeparam>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash的键值</param>
+        /// <param name="value">值</param>
+        /// <returns></returns>
+        public async Task<bool> HashSetAsync<T>(string key, string hashField, T value)
+        {
+            var objBytes = await Serializer.SerializeAsync(value);
+            return await Database.HashSetAsync(SetPrefix(key), hashField, objBytes);
+        }
+
+        /// <summary>
+        /// 批量设置hash值
+        /// </summary>
+        /// <typeparam name="T">值类型</typeparam>
+        /// <param name="key">key</param>
+        /// <param name="values">键值对</param>
+        public void HashSet<T>(string key, Dictionary<string, T> values)
+        {
+            var entries = values.Select(kv => new HashEntry(kv.Key, Serializer.Serialize(kv.Value)));
+            Database.HashSet(SetPrefix(key), entries.ToArray());
+        }
+
+        /// <summary>
+        /// 批量设置hash值
+        /// </summary>
+        /// <typeparam name="T">值类型</typeparam>
+        /// <param name="key">key</param>
+        /// <param name="values">键值对</param>
+        public Task HashSetAsync<T>(string key, Dictionary<string, T> values)
+        {
+            var entries = values.Select(kv => new HashEntry(kv.Key, Serializer.Serialize(kv.Value)));
+            return Database.HashSetAsync(SetPrefix(key), entries.ToArray());
+        }
+
+        /// <summary>
+        /// 获取一个hash值
+        /// </summary>
+        /// <typeparam name="T">值的类型</typeparam>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <returns></returns>
+        public T HashGet<T>(string key, string hashField)
+        {
+            var redisValue = Database.HashGet(SetPrefix(key), hashField);
+            return redisValue.HasValue ? Serializer.Deserialize<T>(redisValue) : default(T);
+        }
+
+        /// <summary>
+        /// 获取一个hash值
+        /// </summary>
+        /// <typeparam name="T">值的类型</typeparam>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <returns></returns>
+        public async Task<T> HashGetAsync<T>(string key, string hashField)
+        {
+            var redisValue = await Database.HashGetAsync(SetPrefix(key), hashField);
+
+            return redisValue.HasValue ? await Serializer.DeserializeAsync<T>(redisValue) : default(T);
+        }
+
+        /// <summary>
+        /// 获取hash值
+        /// </summary>
+        /// <typeparam name="T">值的类型</typeparam>
+        /// <param name="key">key</param>
+        /// <param name="hashFields">hash键组合</param>
+        /// <returns></returns>
+        public Dictionary<string, T> HashGet<T>(string key, IEnumerable<string> hashFields)
+        {
+            var result = new Dictionary<string, T>();
+            foreach (var hashField in hashFields)
+            {
+                var value = HashGet<T>(key, hashField);
+                result.Add(key, value);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 获取hash值
+        /// </summary>
+        /// <typeparam name="T">值的类型</typeparam>
+        /// <param name="key">key</param>
+        /// <param name="hashFields">hash键组合</param>
+        /// <returns></returns>
+        public async Task<Dictionary<string, T>> HashGetAsync<T>(string key, IEnumerable<string> hashFields)
+        {
+            var result = new Dictionary<string, T>();
+            foreach (var hashField in hashFields)
+            {
+                var value = await HashGetAsync<T>(key, hashField);
+                result.Add(key, value);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 获取全部hash值
+        /// </summary>
+        /// <typeparam name="T">值类型</typeparam>
+        /// <param name="key">key</param>
+        /// <returns></returns>
+        public Dictionary<string, T> HashGetAll<T>(string key)
+        {
+            return (Database
+                        .HashGetAll(SetPrefix(key)))
+                        .ToDictionary(
+                            x => x.Name.ToString(),
+                            x => Serializer.Deserialize<T>(x.Value),
+                            StringComparer.Ordinal);
+        }
+
+        /// <summary>
+        /// 获取全部hash值
+        /// </summary>
+        /// <typeparam name="T">值类型</typeparam>
+        /// <param name="key">key</param>
+        /// <returns></returns>
+        public async Task<Dictionary<string, T>> HashGetAllAsync<T>(string key)
+        {
+            return (await Database
+                        .HashGetAllAsync(SetPrefix(key)))
+                        .ToDictionary(
+                            x => x.Name.ToString(),
+                            x => Serializer.Deserialize<T>(x.Value),
+                            StringComparer.Ordinal);
+        }
+
+        /// <summary>
+        /// 获取全部hash值
+        /// </summary>
+        /// <typeparam name="T">值类型</typeparam>
+        /// <param name="key">key</param>
+        /// <returns></returns>
+        public IEnumerable<T> HashValues<T>(string key)
+        {
+            return Database.HashValues(SetPrefix(key)).Select(m => Serializer.Deserialize<T>(m));
+        }
+
+        /// <summary>
+        /// 获取全部hash值
+        /// </summary>
+        /// <typeparam name="T">值类型</typeparam>
+        /// <param name="key">key</param>
+        /// <returns></returns>
+        public async Task<IEnumerable<T>> HashValuesAsync<T>(string key)
+        {
+            return (await Database.HashValuesAsync(SetPrefix(key))).Select(m => Serializer.Deserialize<T>(m));
+        }
+
+        /// <summary>
+        /// 判断是否存在hash键
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <returns></returns>
+        public bool HashExists(string key, string hashField)
+        {
+            return Database.HashExists(SetPrefix(key), hashField);
+        }
+
+        /// <summary>
+        /// 判断是否存在hash键
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <returns></returns>
+        public Task<bool> HashExistsAsync(string key, string hashField)
+        {
+            return Database.HashExistsAsync(SetPrefix(key), hashField);
+        }
+
+        /// <summary>
+        /// 删除一个hash键
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <returns></returns>
+        public bool HashDelete(string key, string hashField)
+        {
+            return Database.HashDelete(SetPrefix(key), hashField);
+        }
+
+        /// <summary>
+        /// 删除一个hash键
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <returns></returns>
+        public Task<bool> HashDeleteAsync(string key, string hashField)
+        {
+            return Database.HashDeleteAsync(SetPrefix(key), hashField);
+        }
+
+        /// <summary>
+        /// 删除hash键
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashFields">hash键集合</param>
+        /// <returns></returns>
+        public long HashDelete(string key, IEnumerable<string> hashFields)
+        {
+            return Database.HashDelete(SetPrefix(key), hashFields.Select(x => (RedisValue)x).ToArray());
+        }
+
+        /// <summary>
+        /// 删除hash键
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashFields">hash键集合</param>
+        /// <returns></returns>
+        public Task<long> HashDeleteAsync(string key, IEnumerable<string> hashFields)
+        {
+            return Database.HashDeleteAsync(SetPrefix(key), hashFields.Select(x => (RedisValue)x).ToArray());
+        }
+
+        /// <summary>
+        /// hash递增
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <param name="value">递增值</param>
+        /// <returns></returns>
+        public long HashIncrement(string key, string hashField, long value = 1)
+        {
+            return Database.HashIncrement(SetPrefix(key), hashField, value);
+        }
+
+        /// <summary>
+        /// hash递增
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <param name="value">递增值</param>
+        /// <returns></returns>
+        public Task<long> HashIncrementAsync(string key, string hashField, long value = 1)
+        {
+            return Database.HashIncrementAsync(SetPrefix(key), hashField, value);
+        }
+
+        /// <summary>
+        /// hash递减
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <param name="value">递减值</param>
+        /// <returns></returns>
+        public long HashDecrement(string key, string hashField, long value = 1)
+        {
+            return Database.HashDecrement(SetPrefix(key), hashField, value);
+        }
+
+        /// <summary>
+        /// hash递减
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <param name="value">递减值</param>
+        /// <returns></returns>
+        public Task<long> HashDecrementAsync(string key, string hashField, long value = 1)
+        {
+            return Database.HashDecrementAsync(SetPrefix(key), hashField, value);
+        }
+
+        /// <summary>
+        /// hash递增
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <param name="value">递增值</param>
+        /// <returns></returns>
+        public double HashIncrementDouble(string key, string hashField, double value)
+        {
+            return Database.HashIncrement(SetPrefix(key), hashField, value);
+        }
+
+        /// <summary>
+        /// hash递增
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <param name="value">递增值</param>
+        /// <returns></returns>
+        public Task<double> HashIncrementDoubleAsync(string key, string hashField, double value)
+        {
+            return Database.HashIncrementAsync(SetPrefix(key), hashField, value);
+        }
+
+        /// <summary>
+        /// hash递减
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <param name="value">递减值</param>
+        /// <returns></returns>
+        public double HashDecrementDouble(string key, string hashField, double value)
+        {
+            return Database.HashDecrement(SetPrefix(key), hashField, value);
+        }
+
+        /// <summary>
+        /// hash递减
+        /// </summary>
+        /// <param name="key">key</param>
+        /// <param name="hashField">hash键</param>
+        /// <param name="value">递减值</param>
+        /// <returns></returns>
+        public Task<double> HashDecrementDoubleAsync(string key, string hashField, double value)
+        {
+            return Database.HashDecrementAsync(SetPrefix(key), hashField, value);
+        }
+
+        #endregion hash
+
+        #region Public
+
+        /// <summary>
+        /// 清除key
+        /// </summary>
+        public void FlushDb()
+        {
+            var endPoints = Database.Multiplexer.GetEndPoints();
+            endPoints.ForEach(endPoint =>
+            {
+                Database.Multiplexer.GetServer(endPoint).FlushDatabase(Database.Database);
+            });
+        }
+
+        /// <summary>
+        /// 清除key
+        /// </summary>
+        public async Task FlushDbAsync()
+        {
+            var endPoints = Database.Multiplexer.GetEndPoints();
+
+            foreach (var endpoint in endPoints)
+            {
+                await Database.Multiplexer.GetServer(endpoint).FlushDatabaseAsync(Database.Database);
+            }
+        }
+
+        /// <summary>
+        /// 保存
+        /// </summary>
+        /// <param name="saveType"></param>
+        public void Save(SaveType saveType)
+        {
+            var endPoints = Database.Multiplexer.GetEndPoints();
+
+            foreach (var endpoint in endPoints)
+            {
+                Database.Multiplexer.GetServer(endpoint).Save(saveType);
+            }
+        }
+
+        /// <summary>
+        /// 保存
+        /// </summary>
+        /// <param name="saveType"></param>
+        /// <returns></returns>
+        public async Task SaveAsync(SaveType saveType)
+        {
+            var endPoints = Database.Multiplexer.GetEndPoints();
+
+            foreach (var endpoint in endPoints)
+            {
+                await Database.Multiplexer.GetServer(endpoint).SaveAsync(saveType);
+            }
+        }
+
+        /// <summary>
+        /// 清除当前db的所有数据
+        /// </summary>
+        public void Clear()
+        {
+            DeleteKeyWithKeyPrefix("*");
+        }
+
         /// <summary>
         /// 计算当前prefix开头的key总数
         /// </summary>
@@ -435,5 +865,7 @@ namespace JQ.Infrastructure
                 end", values: new RedisValue[] { SetPrefix(prefix) });
             }
         }
+
+        #endregion Public
     }
 }

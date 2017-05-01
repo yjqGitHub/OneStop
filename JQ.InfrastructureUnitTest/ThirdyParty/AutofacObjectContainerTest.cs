@@ -1,9 +1,4 @@
 ﻿using JQ.Infrastructure;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace JQ.InfrastructureUnitTest.ThirdyParty
@@ -15,7 +10,25 @@ namespace JQ.InfrastructureUnitTest.ThirdyParty
     /// 类功能描述：AutofacObjectContainerTest
     /// 创建标识：yjq 2017/4/27 22:32:19
     /// </summary>
-    public sealed class AutofacObjectContainerTest
+    public sealed class AutofacObjectContainerTest : BaseTest
     {
+        public AutofacObjectContainerTest() : base()
+        {
+            ObjectContainer.Register<ISerializer, ProtobufSerializer>(serviceName: "protobufSerializer", life: LifeStyle.RequestLifetimeScope);
+            ObjectContainer.Register<IRedisSerializer, DefaultRedisSerializer>(serviceName: "defaultSerializer", life: LifeStyle.RequestLifetimeScope);
+            ObjectContainer.Register<IRedisSerializer, ProtobufRedisSerializer>(life: LifeStyle.RequestLifetimeScope);
+        }
+
+        [Fact]
+        public void Test()
+        {
+            LogUtil.Debug("11111");
+            var serializer = ObjectContainer.ResolveNamed<ISerializer>("protobufSerializer");
+            Assert.IsType(typeof(ProtobufSerializer), serializer);
+            var redisSerialize = ObjectContainer.Resolve<IRedisSerializer>();
+            Assert.IsType(typeof(ProtobufRedisSerializer), redisSerialize);
+            var redisSerializeDefault = ObjectContainer.ResolveNamed<IRedisSerializer>("defaultSerializer");
+            Assert.IsType(typeof(DefaultRedisSerializer), redisSerializeDefault);
+        }
     }
 }

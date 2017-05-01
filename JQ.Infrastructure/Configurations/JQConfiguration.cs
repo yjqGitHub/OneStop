@@ -12,7 +12,7 @@
         /// <summary>
         /// 默认日志记录器名字
         /// </summary>
-        public static string DefaultLoggerName { get; set; } = "JQ";
+        public static string DefaultLoggerName { get; set; } = "JQ.DefaultLogger";
 
         /// <summary>
         /// appconfi的路径
