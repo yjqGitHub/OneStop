@@ -98,11 +98,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseTest.cs" />
+    <Compile Include="TestBase\BaseTest.cs" />
+    <Compile Include="TestBase\ContainerCollection.cs" />
+    <Compile Include="TestBase\ContainerFixture.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ThirdyParty\AutofacObjectContainerTest.cs" />
     <Compile Include="ThirdyParty\ProtobufSerializerTest.cs" />
     <Compile Include="ThirdyParty\Redis\RedisTest.cs" />
+    <Compile Include="ThirdyParty\Redis\RedisTestClass.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

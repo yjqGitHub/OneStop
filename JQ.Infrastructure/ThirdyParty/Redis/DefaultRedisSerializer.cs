@@ -1,4 +1,5 @@
 ﻿using JQ.Infrastructure.Extension;
+using StackExchange.Redis;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,23 +14,23 @@ namespace JQ.Infrastructure
     /// </summary>
     public class DefaultRedisSerializer : IRedisSerializer
     {
-        public virtual object Deserialize(byte[] objbyte)
+        public virtual object Deserialize(RedisValue objbyte)
         {
             return Deserialize<object>(objbyte);
         }
 
-        public virtual T Deserialize<T>(byte[] objbyte)
+        public virtual T Deserialize<T>(RedisValue objbyte)
         {
-            var jsonString = Encoding.UTF8.GetString(objbyte);
+            string jsonString = Encoding.UTF8.GetString(objbyte);
             return jsonString.ToObjInfo<T>();
         }
 
-        public virtual Task<object> DeserializeAsync(byte[] objbyte)
+        public virtual Task<object> DeserializeAsync(RedisValue objbyte)
         {
             return DeserializeAsync<object>(objbyte);
         }
 
-        public virtual Task<T> DeserializeAsync<T>(byte[] objbyte)
+        public virtual Task<T> DeserializeAsync<T>(RedisValue objbyte)
         {
             return Task.Factory.StartNew(() => Deserialize<T>(objbyte));
         }
@@ -41,8 +42,8 @@ namespace JQ.Infrastructure
 
         public virtual byte[] Serialize<T>(T value)
         {
-            var jsonString = value.ToJson();
-            return Encoding.UTF8.GetBytes(jsonString);
+            string jsonValue= value.ToJson();
+            return Encoding.UTF8.GetBytes(jsonValue);
         }
 
         public virtual Task<byte[]> SerializeAsync(object value)

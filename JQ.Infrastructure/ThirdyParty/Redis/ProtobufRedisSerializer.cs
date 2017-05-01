@@ -1,4 +1,7 @@
 ﻿using ProtoBuf;
+using StackExchange.Redis;
+using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -13,19 +16,22 @@ namespace JQ.Infrastructure
     /// </summary>
     public sealed class ProtobufRedisSerializer : DefaultRedisSerializer, IRedisSerializer
     {
-        public override object Deserialize(byte[] objbyte)
+        private static readonly ConcurrentDictionary<RuntimeTypeHandle, bool> _isHaveProtoContractCache = new ConcurrentDictionary<RuntimeTypeHandle, bool>();
+
+        public override object Deserialize(RedisValue objbyte)
         {
             return Deserialize<object>(objbyte);
         }
 
-        public override Task<object> DeserializeAsync(byte[] objbyte)
+        public override Task<object> DeserializeAsync(RedisValue objbyte)
         {
             return DeserializeAsync<object>(objbyte);
         }
 
-        public override T Deserialize<T>(byte[] objbyte)
+        public override T Deserialize<T>(RedisValue objbyte)
         {
-            if (!default(T).GetType().IsDefined(typeof(ProtoContractAttribute), false))
+            var type = typeof(T);
+            if (!IsHaveProtoContract(type))
             {
                 return base.Deserialize<T>(objbyte);
             }
@@ -33,9 +39,10 @@ namespace JQ.Infrastructure
             {
                 return Serializer.Deserialize<T>(memoryStream);
             }
+
         }
 
-        public override Task<T> DeserializeAsync<T>(byte[] objbyte)
+        public override Task<T> DeserializeAsync<T>(RedisValue objbyte)
         {
             return Task.Factory.StartNew(() => Deserialize<T>(objbyte));
         }
@@ -52,10 +59,12 @@ namespace JQ.Infrastructure
 
         public override byte[] Serialize<T>(T value)
         {
-            if (!value.GetType().IsDefined(typeof(ProtoContractAttribute), false))
+            var type = value.GetType();
+            if (!IsHaveProtoContract(type))
             {
                 return base.Serialize(value);
             }
+
             using (var memoryStream = new MemoryStream())
             {
                 Serializer.Serialize(memoryStream, value);
@@ -66,6 +75,16 @@ namespace JQ.Infrastructure
         public override Task<byte[]> SerializeAsync<T>(T value)
         {
             return Task.Factory.StartNew(() => Serialize(value));
+        }
+
+        private bool IsHaveProtoContract(Type type)
+        {
+            RuntimeTypeHandle typeHandle = type.TypeHandle;
+            if (!_isHaveProtoContractCache.ContainsKey(typeHandle))
+            {
+                _isHaveProtoContractCache[typeHandle] = type.IsDefined(typeof(ProtoContractAttribute), false);
+            }
+            return _isHaveProtoContractCache[typeHandle];
         }
     }
 }

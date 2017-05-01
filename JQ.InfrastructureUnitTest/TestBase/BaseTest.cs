@@ -1,28 +1,31 @@
 ﻿using Autofac;
 using JQ.Infrastructure;
-using System;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace JQ.InfrastructureUnitTest
 {
     /// <summary>
-    /// Copyright (C) 2015 备胎 版权所有。
+    /// Copyright (C) 2017 yjq 版权所有。
     /// 类名：BaseTest.cs
     /// 类属性：公共类（非静态）
-    /// 类功能描述：基础测试类
-    /// 创建标识：yjq 2017/5/1 16:30:45
+    /// 类功能描述：BaseTest
+    /// 创建标识：yjq 2017/5/1 22:49:25
     /// </summary>
-    public class BaseTest : IDisposable
+    [Collection("ContainerCollection")]
+    public class BaseTest
     {
-        public BaseTest()
+        private ITestOutputHelper _output;
+
+        public BaseTest(ITestOutputHelper output)
         {
+            _output = output;
             ObjectContainer.SetContainer(new AutofacObjectContainer(new ContainerBuilder()));
             ObjectContainer.Register<ILoggerFactory, NLogFactory>();
             ObjectContainer.Register<IJsonSerializer, NewtonsoftJsonSerializer>();
+            _output.WriteLine("111");
         }
 
-        public void Dispose()
-        {
-            ConnectionMultiplexerFactory.DisposeConn();
-        }
+        public ITestOutputHelper TestOutputHelper { get { return _output; } }
     }
 }

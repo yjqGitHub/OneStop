@@ -1,5 +1,6 @@
 ﻿using JQ.Infrastructure;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace JQ.InfrastructureUnitTest.ThirdyParty
 {
@@ -10,9 +11,10 @@ namespace JQ.InfrastructureUnitTest.ThirdyParty
     /// 类功能描述：AutofacObjectContainerTest
     /// 创建标识：yjq 2017/4/27 22:32:19
     /// </summary>
+    [Collection("ContainerCollection")]
     public sealed class AutofacObjectContainerTest : BaseTest
     {
-        public AutofacObjectContainerTest() : base()
+        public AutofacObjectContainerTest(ITestOutputHelper output) : base(output)
         {
             ObjectContainer.Register<ISerializer, ProtobufSerializer>(serviceName: "protobufSerializer", life: LifeStyle.RequestLifetimeScope);
             ObjectContainer.Register<IRedisSerializer, DefaultRedisSerializer>(serviceName: "defaultSerializer", life: LifeStyle.RequestLifetimeScope);
