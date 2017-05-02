@@ -70,7 +70,7 @@
     <Compile Include="Container\IObjectContainer.cs" />
     <Compile Include="Container\LifeStyle.cs" />
     <Compile Include="Container\ObjectContainer.cs" />
-    <Compile Include="Exception\JQException.cs" />
+    <Compile Include="JQException.cs" />
     <Compile Include="Extension\ExceptionExtension.cs" />
     <Compile Include="Extension\IEnumerableExtension.cs" />
     <Compile Include="Extension\JsonSerializeExtention.cs" />

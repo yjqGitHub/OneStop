@@ -10,6 +10,7 @@ namespace JQ.Infrastructure
     /// 类功能描述：自定义异常类
     /// 创建标识：yjq 2017/4/27 17:32:32
     /// </summary>
+    [Serializable]
     public sealed class JQException : Exception
     {
         public JQException()
